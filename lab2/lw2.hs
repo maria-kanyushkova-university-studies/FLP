@@ -13,23 +13,25 @@ oddEven (h1:(h2:xs)) =h2:(h1 : (oddEven xs))
 
 -- 2. insert (L,A,n)
 insert :: [a] -> a -> Int -> [a]
-insert a b pos = take pos a ++ [b] ++ drop pos a
+insert l a n = (take n l) ++ a : (drop n l)
 
--- 3. listSumm(L1,L2)
-listSum :: Num a => [a] -> [a] -> [a]
-listSum a b = zipWith (+) a b
+-- 3. listSum(L1,L2)
+listSum :: (Num a) => [a] -> [a] -> [a]
+listSum [] l2 = l2
+listSum l1 [] = l1
+listSum (x:l1) (y:l2) = x+y : listSum l1 l2
 
 -- 4. position (L,A)
 position :: Eq a => a -> [a] -> Int
 position x xs = fromMaybe (-1) (findIndex (==x) xs)
 
 -- 5. Найти сумму  F(n)=∑i=1ni
-summFn :: Int -> Int
-summFn a = sum([1..a])
+sumFn :: Int -> Int
+sumFn a = sum([1..a])
 
 -- 6. Найти  сумму F(n)=∑i=1nn−i 
-summFn1 :: Int -> Int
-summFn1 a = sum([1..a-1])
+sumFn1 :: Int -> Int
+sumFn1 a = sum([1..a-1])
 
 main = do
         putStr "N0:"
