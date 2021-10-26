@@ -1,3 +1,7 @@
+qsort :: Ord a => [a] -> [a]
+qsort [] = []
+qsort (x:xs) = (qsort [y | y <- xs, y<=x]) ++ [x] ++ (qsort [y | y <- xs, y>x])
+
 -- 1. Определите функцию listnums. Она берет численный аргумент n  и возвращает список всех чисел от n до 1, включительно. #2
 listnums :: Int -> [Int]
 listnums n
@@ -44,11 +48,11 @@ main = do
     -- => [3,6]
 
     putStr "N3:"
-    print (myunion [1, 2, 3, 4] [2, 3, 4, 5])
+    print (myunion (qsort [4, 3, 2, 1]) (qsort [2, 3, 4, 5, 0]))
     -- => [1,2,3,4,5]
 
     putStr "N4:"
-    print (mysubst [1, 2, 3, 4, 5, 6] [2, 3, 4, 5])
+    print (mysubst (qsort[1, 2, 3, 4, 5, 6]) (qsort[2, 3, 4, 5, 1]))
     -- => [1,6]
 
     putStr "N5:"
