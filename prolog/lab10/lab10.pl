@@ -11,12 +11,12 @@ seg(9, point(12, 2), point(12, 12)).
 /*
 1. Напишите правило, определяющее номер горизонтального отрезка. Голова правила представлена термом horiz/1.
 */
-horiz(N):-seg(N, point(_,Y), point(_,Y)).
+horiz(N) :- seg(N, point(_, Y), point(_, Y)).
 
 /*
 1. Напишите  правило, определяющее номер вертикального отрезка. Голова правила представлена термом vertical/1.
 */
-vertical(N):-seg(N, point(X, _), point(X, _)).
+vertical(N) :- seg(N, point(X, _), point(X, _)).
 
 /*
 2. Введите в базу данных правило, определяющее пересекающиеся отрезки.
@@ -26,31 +26,24 @@ vertical(N):-seg(N, point(X, _), point(X, _)).
 http://algolist.ru/maths/geom/intersect/lineline2d.php
 */
 cross(N, M, point(X, Y), NL, ML):-
-    seg(N, point(X1, Y1), point(X2, Y2)),
-    seg(M, point(X3, Y3), point(X4, Y4)),
-    UA_DIV is (Y4-Y3)*(X2-X1)-(X4-X3)*(Y2-Y1),
-    UA_DIV \= 0,
-   	UA is ((X4-X3)*(Y1-Y3)-(Y4-Y3)*(X1-X3))/(UA_DIV),
-    UB_DIV is (Y4-Y3)*(X2-X1)-(X4-X3)*(Y2-Y1),
-    UB_DIV \= 0,
-    X is X1 + UA * (X2 - X1),
-    Y is Y1 + UA * (Y2 - Y1),
-    ML is sqrt((X2-X1)*(X2-X1)+(Y2-Y1)*(Y2-Y1)),
-    NL is sqrt((X4-X3)*(X4-X3)+(Y4-Y3)*(Y4-Y3)).
+    vertical(N), horiz(M),  /* N - вертикальный отрезок, M - горизонтальный отрезок  */
+    seg(N, point(X3, Y2), point(X3, Y3)), /* x3, y2 - точки начала вертикального отрезка ; x3, y3 - точки конца вертикального отрезка */
+    seg(M, point(X1, Y1), point(X2, Y1)), /* x1, y1 - точки начала горизонтального отрезка ; x2, y1 - точки конца горизонтального отрезка */
+    X1 < X3, X2 > X3, Y2 < Y1, Y3 > Y1,  /* условие пересечения отрезков:  */
+    X is X3, Y is Y1,
+    NL is Y3 - Y2,
+    ML is X2 - X1.
 
 /*
 3. Добавьте в базу данных правило определения периметра и площади прямоугольников, образуемых пересекающимися отрезками.
 Голова правила представлена структурой per_sq/6, четыре  аргумента которой - номера отрезков, образующих прямоугольник.
 Пятый аргумент - P, периметр прямоугольника. Шестой аргумент - S, площадь периметра.
 */
-per_sq(A, B, C, D, P, S):-
-    cross(A, B, point(X1, Y1), _, _),
-    cross(B, C, point(X2, Y2), _, _),
-    cross(C, D, point(X3, Y3), _, _),
-    cross(D, A, point(X4, Y4), _, _),
-    LAB is sqrt((X2-X1)*(X2-X1)+(Y2-Y1)*(Y2-Y1)),
-    LBC is sqrt((X3-X2)*(X3-X2)+(Y3-Y2)*(Y3-Y2)),
-    LCD is sqrt((X4-X3)*(X4-X3)+(Y4-Y3)*(Y4-Y3)),
-    LDA is sqrt((X1-X4)*(X1-X4)+(Y1-Y4)*(Y1-Y4)),
-    P is (LAB + LBC + LCD + LDA), P > 0,
-    S is (LAB * LBC), S > 0.
+perimetr(A, B, C, D, P, S):-
+    cross(A, B, point(X1, _), _, _),
+    cross(C, B, point(X2, Y2), _, _),
+    cross(C, D, point(_, Y3), _, _),
+    cross(A, D, point(_, _), _, _), /* можно удалить, но дает гарантию что все отрезки точно пересекаются */
+    A \= C, B\= D,
+    P is abs(X2 - X1) * 2 + abs(Y2 - Y3) * 2,
+    S is abs(X2 - X1) * abs(Y2 - Y3).
