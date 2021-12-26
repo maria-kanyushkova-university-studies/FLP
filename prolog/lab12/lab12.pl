@@ -96,53 +96,68 @@ sort_3 :-
 чтобы мог быть реализован диалог.
 */
 
-order(X, Y):-X =< Y.
-
-dialog(F):-write("list? "), read(X), call(F, X, R), !, write("answer: "), write(R).
-
 /*
 4.1. Метод наивной сортировки (назвать правило sort_4_1).
 */
-permutation(L, [H|T]):-append(V, [H|U], L), append(V, U, W), permutation(W, T).
+sortn(L1, L2) :- permutation(L1, L2), sorted(L2),!.
+permutation(L, [H|T]) :- append(V, [H|U], L), append(V, U, W), permutation(W, T).
 permutation([], []).
-sorted([X,Y|T]):-order(X,Y), sorted([Y|T]).
 sorted([_]).
-sortn(L1, L2):-permutation(L1, L2), sorted(L2),!.
-sort_4_1:-dialog(sortn).
+sorted([X,Y|T]) :- order(X,Y), sorted([Y|T]).
+order(X, Y) :- X =< Y.
+
+sort_4_1 :-
+    write('list? '),
+    read(InputList), nl,
+    write('answer: '),
+    sortn(InputList, Res),
+    write(Res).
 
 /*
 4.2. Метод пузырька (назвать правило sort_4_2).
 */
-busort(L, S):-swap(L, M), !, busort(M, S).
-busort(L, L):-!.
-swap([X, Y|R], [Y, X|R]):-order(Y, X).
-swap([X|R], [X|R1]):-swap(R, R1).
-sort_4_2:-dialog(busort).
+busort(L, S) :- swap(L, M), !, busort(M, S).
+busort(L, L) :- !.
+swap([X, Y|R], [Y, X|R]) :- order(Y, X).
+swap([X|R], [X|R1]) :- swap(R, R1).
+
+sort_4_2 :-
+    write('list? '),
+    read(InputList), nl,
+    write('answer: '),
+    busort(InputList, Res),
+    write(Res).
 
 /*
 4.3. Метод вставки (назвать правило sort_4_3).
 */
-insortx(X, [A|L], [A|M]):-order(A, X), !, insortx(X, L, M).
-insortx(X, L, [X|L]).
 insort([], []).
-insort([X|L], M):-insort(L, N), insortx(X, N, M).
-sort_4_3:-dialog(insort).
+insort([X|L], M) :- insort(L, N), insortx(X, N, M).
+insortx(X, [A|L], [A|M]) :- order(A, X), !, insortx(X, L, M).
+insortx(X, L, [X|L]).
+
+sort_4_3 :-
+    write('list? '),
+    read(InputList), nl,
+    write('answer: '),
+    insort(InputList, Res),
+    write(Res).
 
 /*
 4.4. Быстрая сортировка quick (назвать правило sort_4_4).
 */
 qsort([], []).
-qsort([H|T], S):-
-    split(H, T, Small, Big),
-    qsort(Small, Small1),
-    qsort(Big, Big1),
-    append(Small1, [H|Big1], S).
-split(H, [A|T], [A|Small], Big):-
-    order(A, H), !,
-    split(H, T, Small, Big).
-split(H, [A|T], Small, [A|Big]):-split(H, T, Small, Big).
+qsort([H|Tail], S) :- split(H, Tail, Small, Big), qsort(Small,Small1), qsort(Big, Big1), append(Small1, [H|Big1], S).
+split(H, [A|Tail], [A|Small], Big) :- order(A, H), !, split(H, Tail, Small, Big).
+split(H, [A|Tail], Small, [A|Big]) :- split(H, Tail, Small, Big).
 split(_, [], [], []).
-sort_4_4:-dialog(qsort).
+
+sort_4_4 :-
+    write('list? '),
+    read(InputList), nl,
+    write('answer: '),
+    qsort(InputList, Res),
+    write(Res).
 
 /*
 5. Построить бесповторный упорядоченный список L3, состоящий из всех элементов,
