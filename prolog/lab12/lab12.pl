@@ -173,13 +173,34 @@ makeUnique([H|T], [H|Res]) :- makeUnique(T, Res).
 6. Определить самый распространенный элемент X в списке L.
 Если в списке несколько самых распространенных элементов, то ответ надо сделать в виде списка из самых распространенных элементов.
 */
-seconds([], []).
-seconds([[_, X]|T], R):-seconds(T, L), append(L, [X], R).
+countRepeated([Elem|Xs], Elem, Count, Ys) :-
+    countRepeated(Xs, Elem, Count1, Ys), Count is Count1+1.
+countRepeated([AnotherElem|Ys], Elem, 0, [AnotherElem|Ys]) :-
+    Elem \= AnotherElem.
+countRepeated([], _, 0, []).
+
+rle([X|Xs], [[C,X]|Ys]) :-
+    countRepeated([X|Xs], X, C, Zs),
+    rle(Zs, Ys).
+rle([], []).
+
+isEqual(A, A).
+isNotEqual(A,B):- A\=B.
+
+unionRepeated([], _, _) :- !.
+unionRepeated([[CountR| _]| _], Length, []) :-
+    isNotEqual(CountR, Length), !.
+unionRepeated([[CountR| El]| T], Length, Union) :-
+    isEqual(CountR, Length),
+    append(El, Union, NewUnion),
+    write(NewUnion), nl,
+    unionRepeated(T, Length, NewUnion).
+
 most_oft(L, X):-
-    sort(L, SortedList),
-    findall([Freq, Element], (member(Element, SortedList), include(=(Element), L, XX), length(XX, Freq)), FreqList),
-    sort(FreqList, SortedFreqList),
-    last(SortedFreqList, [HighestFreq, _]),
-    findall([Freq, Element], (member([Freq, Element], SortedFreqList), Freq = HighestFreq), HighestFreqList),
-    length(HighestFreqList, HighestFreqListLength),
-    (HighestFreqListLength > 1 -> seconds(HighestFreqList, HighestFreqListSeconds), reverse(HighestFreqListSeconds, X); last(HighestFreqList, [_, X])).
+    msort(L, SList),
+    rle(SList, RLE),
+    sort(RLE, SRLE),
+    reverse(SRLE, SL),
+    SL = [[Length|_]|_],
+    unionRepeated(SL, Length, X).
+
