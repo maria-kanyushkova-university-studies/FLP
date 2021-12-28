@@ -1,99 +1,116 @@
-module Boat where
-import Data.List
-import Data.Array
+import qualified Data.List as List
+import Debug.Trace
 
--- лодка и волк-коза-капуста
--- объект
-data Item = Wolf | Goat | Cabbage | Farmer
-    deriving (Show, Eq, Ord, Ix)
+data Action = Move { left :: [Bool], -- что находится на левом острове
+                     right :: [Bool], -- что находится на правом острове
+                     side :: Bool, -- сторона лодочника, фолс лево, тру право
+                     index :: Int, -- номер итерации
+                     prev :: Action, -- предыдущее состояние
+                     comment :: (Int, Bool) -- остановка вывода -2 инит и конец
+              } | 
+              Stop deriving (Show) 
 
--- положение
-data Location = L | R
-    deriving (Show, Eq, Ord)
 
--- обратное положение
-from L = R
-from R = L
+-- проверка двух состояний для исключения повторных состояний (когда с одной стороны все находятся) (чтобы было меньше перебора)
+isEqual :: Action -> Action -> Bool
+isEqual act1 act2 = and [ left act1 == left act2, right act1 == right act2, side act1 == side act2 ]
 
--- позиция: где кто
-type Position = Array Item Location
+-- первый элемент состояния (кто находится где), и фильтруем хвост по isEqual и убираем повторения
+filterList :: [Action] -> [Action]
+filterList [] = []
+filterList list = list !! 0 : filterList [ list !! i | i <- [1 .. length list-1], not (isEqual (list !! i) (list !! 0)) ]
 
--- начальная и целевая позиция
-startPositionA = listArray (Wolf, Farmer) [L, L, L, L]
-goalPositionA = listArray (Wolf, Farmer) [R, R, R, R]
+-- убираем плохие сценарии
+filterScenarios :: [Action] -> [[Bool]] -> [Action]
+filterScenarios list badCases = [ act | act <- list, not(if side act then left act `elem` badCases else right act `elem` badCases) ]
 
-startPositionB = listArray (Wolf, Farmer) [L, L, L, L]
-goalPositionB = listArray (Wolf, Farmer) [R, R, R, L]
+-- переборный поиск в ширину, вдруг повезет, какой мув можно сделать сразу
+getMoves :: Action -> [Action]
+getMoves act = newActions ++ [noCarryAction]  --(side1, side2, not manSide, weight, last1, last2, manLast, lastWeight)
+    where curSide = if (side act == False) then left act else right act
+    
+          swap :: [Bool] -> Int -> [Bool]
+          swap xs index = [if i == index then not (xs!!i) else xs!!i | i <- [0..length xs-1]]
+          
+          newActions = [
+              Move {
+                  left = swap (left act) i, 
+                  right = swap (right act) i, 
+                  side = not (side act), 
+                  index = (index act) + 1, 
+                  prev = act,
+                  comment = (i, not (side act))
+              } | i <- [0..length curSide -1], curSide !! i /= False]
 
-startPositionC = listArray (Wolf, Farmer) [L, L, R, L]
-goalPositionC = listArray (Wolf, Farmer) [R, R, R, R]
+              -- когда не таскаем объект, просто меняем сторону лодочника
+          noCarryAction = Move {
+              left = left act, 
+              right = right act, 
+              side = not (side act), 
+              index = (index act) + 1, 
+              prev = act,
+              comment = (-1, not (side act))
+          }
+          
+--
+recursiveSearch :: ([Action], Action, [[Bool]]) -> ([Action], Action, [[Bool]])
+recursiveSearch (input, endCase, badCases)
+    | isEnd = (endSougt, endCase, badCases)
+    | otherwise = recursiveSearch (res, endCase, badCases)  --trace (show res ++ "\n") ()
+    -- i - поэлементный инпут, concat - все варианты без сортировки
+    where unclearedRes = List.concat [getMoves i | i <- input]
+          -- фильтр
+          res = filterScenarios (filterList (unclearedRes ++ input)) badCases
+          -- бул переменная, если в списке найдено конечное состояние
+          isEnd = any (\act -> isEqual act endCase) res
+          -- записываем новый экшен и делаем ссылку на предыдущее состояние
+          endSougt = if isEnd then [act | act <- res, isEqual act endCase] else []::[Action]
 
-startPositionD = listArray (Wolf, Farmer) [L, L, L, L]
-goalPositionD = listArray (Wolf, Farmer) [R, R, L, R]
+-- инициализация поисковой рекурсии
+search :: Action -> Action -> [[Bool]] -> [Action]
+search start end bad = res
+    where (res, _, _) = recursiveSearch ([start], end, bad)
 
-startPositionE = listArray (Wolf, Farmer) [L, R, L, L]
-goalPositionE = listArray (Wolf, Farmer) [R, R, R, R]
-
--- неправильная позиция: без контроля человека остаются
--- волк с козлом или козел с капустой
-wrongPosition :: Position -> Bool
-wrongPosition p =
-    all (/= p!Farmer) [p!Wolf, p!Goat] || all (/= p!Farmer) [p!Cabbage, p!Goat]
-
--- шаг переправы с берега на берег с кем-нибудь: какие варианты можно получить
-step :: Position -> [Position]
-step p =
-    [p // [(who, from wher)] // [(Farmer, from wher)] | (who,wher) <- whom] where
-    whom = filter ((== p!Farmer) . snd) $ assocs p
-
--- решение: последовательность позиций (самая последняя - в начале списка)
-type Solution = [Position]
-
--- построение нового списка возможных решений из старого
-stepSolution :: [Solution] -> [Solution]
-stepSolution sols =
-    [(newpos:sol) | sol <- sols, newpos <- step (head sol), not $ wrongPosition newpos]
-
--- итеративный процесс построения возможных решений,
--- для поиска среди них того, которое является ответом
-searchA :: [[Solution]]
-searchA = iterate stepSolution [[startPositionA]]
-
-searchB :: [[Solution]]
-searchB = iterate stepSolution [[startPositionB]]
-
-searchC :: [[Solution]]
-searchC = iterate stepSolution [[startPositionC]]
-
-searchD :: [[Solution]]
-searchD = iterate stepSolution [[startPositionD]]
-
-searchE :: [[Solution]]
-searchE = iterate stepSolution [[startPositionE]]
-
--- нахождение первого решения, которое является ответом
-solutionA :: [Position]
-solutionA = head $ filter ((==goalPositionA).head) $ concat $ searchA
-
-solutionB :: [Position]
-solutionB = head $ filter ((==goalPositionB).head) $ concat $ searchB
-
-solutionC :: [Position]
-solutionC = head $ filter ((==goalPositionC).head) $ concat $ searchC
-
-solutionD :: [Position]
-solutionD = head $ filter ((==goalPositionD).head) $ concat $ searchD
-
-solutionE :: [Position]
-solutionE = head $ filter ((==goalPositionE).head) $ concat $ searchE
-
--- вывод решения на экран
-showSolutionA = sequence $ map (putStrLn.show.assocs) solutionA
-
-showSolutionB = sequence $ map (putStrLn.show.assocs) solutionB
-
-showSolutionC = sequence $ map (putStrLn.show.assocs) solutionC
-
-showSolutionD = sequence $ map (putStrLn.show.assocs) solutionD
-
-showSolutionE = sequence $ map (putStrLn.show.assocs) solutionE
+-- вывод единственного путя, развертка того действия
+prettierPrint :: Action -> String
+prettierPrint moves
+    | index moves == 0 = show (lside) ++ " " ++ show (rside) ++ " " ++ show (manSide) ++ commentary ++ "\n"
+    | otherwise = prettierPrint (prev moves) ++ show (lside) ++ " " ++ show (rside) ++ " " ++ show (manSide) ++ commentary ++ "\n"
+    where lside = [if (left moves) !! i then ["Cabb", "Goat", "Wolf"] !! i else "----" | i <- [0 .. length (left moves)-1]]
+          rside = [if (right moves) !! i then ["Cabb", "Goat", "Wolf"] !! i else "----" | i <- [0 .. length (right moves)-1]]
+          manSide = if side moves then "RIGHT" else "LEFT "
+          commentary = if fst(comment moves) == -2 
+                       then "    Initial state"
+                       else (if fst(comment moves) == -1 
+                           then "    Moving to " ++ (if snd(comment moves) then "RIGHT " else "LEFT ") ++ "side EMPTY"
+                           else "    Moving to " ++ (if snd(comment moves) then "RIGHT " else "LEFT ") ++ "side with " ++ ["Cabb", "Goat", "Wolf"] !! fst(comment moves) ++ " on board"
+                           )
+main :: IO()
+main = do
+    -- situation A
+    let start = Move { left=[True, True, True], right=[False, False, False], side=False, index=0, prev=Stop, comment=(-2, False) } 
+    let end = Move { left=[False, False, False], right=[True, True, True], side=True, index=0, prev=Stop, comment=(-2, False) }
+    let badScenarios = [[True, True, False], [False, True, True]]
+    --putStr(prettierPrint ((search start end badScenarios)!!0))
+    
+    -- situation B
+    let start1 = Move { left=[True, True, True], right=[False, False, False], side=False, index=0, prev=Stop, comment=(-2, False) } 
+    let end1 = Move { left=[False, False, False], right=[True, True, True], side=False, index=0, prev=Stop, comment=(-2, False) }
+    --putStr(prettierPrint ((search start1 end1 badScenarios)!!0))
+    
+    -- situation C
+    let start2 = Move { left=[False, True, True], right=[True, False, False], side=False, index=0, prev=Stop, comment=(-2, False) } 
+    let end2 = Move { left=[False, False, False], right=[True, True, True], side=True, index=0, prev=Stop, comment=(-2, False) }
+    --putStr(prettierPrint ((search start2 end2 badScenarios)!!0))
+    
+    -- situation D
+    let start3 = Move { left=[True, True, True], right=[False, False, False], side=False, index=0, prev=Stop, comment=(-2, False) } 
+    let end3 = Move { left=[True, False, False], right=[False, True, True], side=True, index=0, prev=Stop, comment=(-2, False) }
+    --putStr(prettierPrint ((search start3 end3 badScenarios)!!0))
+    
+    -- situation E
+    let start4 = Move { left=[True, False, True], right=[False, True, False], side=False, index=0, prev=Stop, comment=(-2, False) } 
+    let end4 = Move { left=[False, False, False], right=[True, True, True], side=True, index=0, prev=Stop, comment=(-2, False) }
+    putStr(prettierPrint ((search start4 end4 badScenarios)!!0))
+    putStr("")
+    
