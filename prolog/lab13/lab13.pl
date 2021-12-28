@@ -114,9 +114,9 @@ path8 :-
             assert(way(Res, NewLen))
 
         ),
-        _),
-        way(Best, _),
-        write(Best), nl.
+    _),
+    way(Best, _),
+    write(Best), nl.
 
 
 /*5.9 #2
@@ -131,8 +131,7 @@ path9Iterate([H|Tail], BestRes, BestLen, Res, Len) :-
     (
         BestLen =< NewLength,
         append([], BestRes, NewBestRes),
-        NewBestLen is BestLen
-    ;
+        NewBestLen is BestLen;
         BestLen > NewLength,
         append([], H, NewBestRes),
         NewBestLen is NewLength
@@ -167,5 +166,4 @@ path10 :-
     findall(Treasure, treasure(Treasure), TreasureList),
     findall(Res, (pathBacktrack(a, _, [], Res), subset(Res, TreasureList)), List),
     path9Iterate(List, [], 9999, Best, _),
-    write(Best),
-    nl.
+    write(Best), nl.
