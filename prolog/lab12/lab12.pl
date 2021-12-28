@@ -163,7 +163,7 @@ sort_4_4 :-
 5. Построить бесповторный упорядоченный список L3, состоящий из всех элементов,
 содержащихся как в списке L1, так и в списке L2.
 */
-common(L1, L2, Res) :- append(L1, L2, List), qsort(List, SortedList), makeUnique(SortedList, Res).
+common(L1, L2, Res) :- append(L1, L2, List), qsort(List, SortedList), makeUnique(SortedList, Res), !.
 
 makeUnique([], []) :- !.
 makeUnique([H,H|T], Res) :- makeUnique([H|T], Res), !.
@@ -187,20 +187,20 @@ rle([], []).
 isEqual(A, A).
 isNotEqual(A,B):- A\=B.
 
-unionRepeated([], _, _) :- !.
-unionRepeated([[CountR| _]| _], Length, []) :-
-    isNotEqual(CountR, Length), !.
-unionRepeated([[CountR| El]| T], Length, Union) :-
-    isEqual(CountR, Length),
-    append(El, Union, NewUnion),
-    write(NewUnion), nl,
+unionRepeated([], _, []) :- !.
+
+unionRepeated([[CountR, _]| T], Length, NewUnion) :-
+    isNotEqual(CountR, Length),
+    unionRepeated(T, Length, NewUnion), !.
+
+unionRepeated([[Length, El]| T], Length, [El|NewUnion]) :-
     unionRepeated(T, Length, NewUnion).
 
 most_oft(L, X):-
     msort(L, SList),
     rle(SList, RLE),
     sort(RLE, SRLE),
-    reverse(SRLE, SL),
-    SL = [[Length|_]|_],
-    unionRepeated(SL, Length, X).
+    reverse(SRLE, [[Length|_]|_]),
+    unionRepeated(SRLE, Length, X), !.
+
 
