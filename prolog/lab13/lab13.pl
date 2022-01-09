@@ -1,3 +1,118 @@
+/*
+Решение на прологе ничем не отличается от решения на хаскеле, у них можно
+сказать одинаковое решение, только на прологе оно будет лаконичным.
+В обоих случаях это перебор до хорошей комбинации, которую в хаскеле ищем мы,
+а в прологе ищет сам пролог по заданным правилам.
+Если судить по ответу, который получается, во всех задачах он одинаковый,
+а если конкретнее:
+
+а) фермер перевозит волка, козла и капусту на другой берег.
+Начальное состояние:
+    Левый берег: ["Cabb","Goat","Wolf"]
+    Правый берег: ["----","----","----"]
+    Фермер: Слева
+Конечное состояние:
+    Левый берег: ["----","----","----"]
+    Правый берег: ["Cabb","Goat","Wolf"]
+    Фермер: Справа
+
+Решение:
+    Haskel                                      Prolog
+
+    Moving to RIGHT side with Goat on board     The farmer takes the Goat fromwest of the river to east
+    Moving to LEFT side EMPTY                   The farmer crosses the river from east to west
+    Moving to RIGHT side with Cabb on board     The farmer takes the cabbage from west of the river to east
+    Moving to LEFT side with Goat on board      The farmer takes the Goat fromeast of the river to west
+    Moving to RIGHT side with Wolf on board     The farmer takes the Wolf from west of the river to east
+    Moving to LEFT side EMPTY                   The farmer crosses the river from east to west
+    Moving to RIGHT side with Goat on board     The farmer takes the Goat fromwest of the river to east
+
+
+
+b) фермер перевозит волка, козла и капусту на другой берег, а сам возвращается.
+Начальное состояние:
+    Левый берег: ["Cabb","Goat","Wolf"]
+    Правый берег: ["----","----","----"]
+    Фермер: Слева
+Конечное состояние:
+    Левый берег: ["----","----","----"]
+    Правый берег: ["Cabb","Goat","Wolf"]
+    Фермер: Слева
+
+Решение:
+    Haskel                                      Prolog
+
+    Moving to RIGHT side with Goat on board     The farmer takes the Goat fromwest of the river to east
+    Moving to LEFT side EMPTY                   The farmer crosses the river from east to west
+    Moving to RIGHT side with Cabb on board     The farmer takes the cabbage from west of the river to east
+    Moving to LEFT side with Goat on board      The farmer takes the Goat fromeast of the river to west
+    Moving to RIGHT side with Wolf on board     The farmer takes the Wolf from west of the river to east
+    Moving to LEFT side EMPTY                   The farmer crosses the river from east to west
+    Moving to RIGHT side with Goat on board     The farmer takes the Goat fromwest of the river to east
+    Moving to LEFT side EMPTY                   The farmer crosses the river from east to west
+
+
+
+c) фермер перевозит на другой берег волка и козла, а капуста уже находится на том берегу.
+Начальное состояние:
+    Левый берег: ["----","Goat","Wolf"]
+    Правый берег: ["Cabb","----","----"]
+    Фермер: Слева
+Конечное состояние:
+    Левый берег: ["----","----","----"]
+    Правый берег: ["Cabb","Goat","Wolf"]
+    Фермер: Справа
+
+Решение:
+    Haskel                                      Prolog
+
+    Moving to RIGHT side with Wolf on board     The farmer takes the Wolf from west of the river to east
+    Moving to LEFT side EMPTY                   The farmer crosses the river from east to west
+    Moving to RIGHT side with Goat on board     The farmer takes the Goat fromwest of the river to east
+
+
+
+d) фермер перевозит на другой берег волка и козла, а капусту оставляет.
+Начальное состояние:
+    Левый берег: ["Cabb","Goat","Wolf"]
+    Правый берег: ["----","----","----"]
+    Фермер: Слева
+Конечное состояние:
+    Левый берег: ["Cabb","----","----"]
+    Правый берег: ["----","Goat","Wolf"]
+    Фермер: Справа
+
+Решение:
+    Haskel                                      Prolog
+
+    Moving to RIGHT side with Goat on board     The farmer takes the Goat fromwest of the river to east
+    Moving to LEFT side EMPTY                   The farmer crosses the river from east to west
+    Moving to RIGHT side with Wolf on board     The farmer takes the Wolf from west of the river to east
+
+
+
+e) фермер перевозит на другой берег волка и капусту, а козёл  уже ждет на том берегу.
+Начальное состояние:
+    Левый берег: ["Cabb","----","Wolf"]
+    Правый берег: ["----","Goat","----"]
+    Фермер: Слева
+Конечное состояние:
+    Левый берег: ["----","----","----"]
+    Правый берег: ["Cabb","Goat","Wolf"]
+    Фермер: Справа
+
+Решение:
+    Haskel                                      Prolog
+
+    Moving to RIGHT side with Cabb on board     The farmer takes the cabbage from west of the river to east
+    Moving to LEFT side with Goat on board      The farmer takes the Goat fromeast of the river to west
+    Moving to RIGHT side with Wolf on board     The farmer takes the Wolf from west of the river to east
+    Moving to LEFT side EMPTY                   The farmer crosses the river from east to west
+    Moving to RIGHT side with Goat on board     The farmer takes the Goat fromwest of the river to east
+
+Как видно, решения одинаковые во всех случаях
+*/
+
 room(a).
 room(b).
 room(c).
@@ -45,7 +160,7 @@ window(l, 1).
 path(Goal, Goal, Ans, Ans).
 path(Start, Goal, List, Res) :-
     isDoor(Start, Next),
-    \+ member(Next, List),  % no backtrack
+    \+ member(Next, List),  % проверка на то что в этой комнате мы не были
     append(List, [Next], NewList),
     path(Next, Goal, NewList, Res)
     .
@@ -53,7 +168,7 @@ path(Start, Goal, List, Res) :-
 windowPath(Goal, Goal, Ans, Ans, Windows, WindowsRes) :- window(Goal , WindowsInThisRoom), WindowsRes is Windows + WindowsInThisRoom.
 windowPath(Start, Goal, List, Res, Windows, WindowsRes) :-
     isDoor(Start, Next),
-    \+ member(Next, List),  % no backtrack
+    \+ member(Next, List),  % проверка на то что в этой комнате мы не были
     append(List, [Next], NewList),
     window(Start , WindowsInThisRoom),
     NewWindows is Windows + WindowsInThisRoom,
