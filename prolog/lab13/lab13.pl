@@ -156,24 +156,33 @@ window(j, 1).
 window(k, 2).
 window(l, 1).
 
-
+% первый параметр это проложить путь из какой комнаты, второй параметр это целевая комната,
+% третий параметр специальный список для проверки и аккуратного сбора результата,
+% так как начинаем с пустого массива, и сразу задается тип данных, а не указатель на какой-то элемент как было в 12ой лабе
+% четвертый параметр это искомый путь
 path(Goal, Goal, Ans, Ans).
 path(Start, Goal, List, Res) :-
     isDoor(Start, Next),
     \+ member(Next, List),  % проверка на то что в этой комнате мы не были
     append(List, [Next], NewList),
-    path(Next, Goal, NewList, Res)
-    .
+    path(Next, Goal, NewList, Res).
 
-windowPath(Goal, Goal, Ans, Ans, Windows, WindowsRes) :- window(Goal , WindowsInThisRoom), WindowsRes is Windows + WindowsInThisRoom.
+
+% первый параметр это проложить путь из какой комнаты, второй параметр это целевая комната,
+% третий параметр специальный список для проверки и аккуратного сбора результата,
+% так как начинаем с пустого массива, и сразу задается тип данных, а не указатель на какой-то элемент как было в 12ой лабе
+% четвертый параметр это искомый путь
+% пятый параметр это тоже начальное состояние по счетчику окон и сборка количества окон по путю
+% шестой парметр это результат количество окон встреченных на пути
+windowPath(Goal, Goal, Ans, Ans, Windows, WindowsRes) :-
+window(Goal , WindowsInThisRoom), WindowsRes is Windows + WindowsInThisRoom.
 windowPath(Start, Goal, List, Res, Windows, WindowsRes) :-
     isDoor(Start, Next),
     \+ member(Next, List),  % проверка на то что в этой комнате мы не были
     append(List, [Next], NewList),
     window(Start , WindowsInThisRoom),
     NewWindows is Windows + WindowsInThisRoom,
-    windowPath(Next, Goal, NewList, Res, NewWindows, WindowsRes)
-    .
+    windowPath(Next, Goal, NewList, Res, NewWindows, WindowsRes).
 
 /*5.2 #1
 Напечатать список комнат, через которые лежит путь к комнате G, выбранный Прологом.
@@ -202,7 +211,7 @@ path5 :- path(a, g, [], Res), \+ member(e, Res), write(Res), nl, !.
 /*5.6 #1
 Найти и напечатать все возможные пути из комнаты А  в комнату L.
 */
-path6 :- path(a, l, [], Res), write(Res), nl.
+path6 :- findall(Res, path(a, l, [], Res), Bag), write(Bag), nl.
 
 /*5.7 #2
 В некоторых комнатах есть окна. Например, в комнате H их целых три.  Надо посчитать количество окон в комнатах, через
@@ -215,6 +224,11 @@ path7 :- windowPath(a, l, [], Res, 0, Windows), write(Res), write(" "), write(Wi
 самый длинный путь way(М), а затем, перебирая все возможные пути к L, заменять way(M) на более короткий,используя
 при этом assert и retract.
 */
+% assert добавить факт
+% retract убрать факт
+
+% по всем существующим путям делаем сортировку, если меньше чем предыдущий
+% результат, но предыдущий стираем и новый записываем, в конце остается 1 путь
 path8 :-
     assert(way([], 9999)),
     findall(
@@ -227,9 +241,8 @@ path8 :-
             NewLen < BestLen,
             retractall(way(_, _)),
             assert(way(Res, NewLen))
-
         ),
-    _),
+        _),
     way(Best, _),
     write(Best), nl.
 
@@ -237,8 +250,13 @@ path8 :-
 /*5.9 #2
 Сделать то же, что в пункте 5.8, но без assert и retract.
 */
+% по всем существующим путям делаем сортировку,
+% если лучшая длина меньше новой, то оставляем лучшую
+% если лучшая длина не лучшая, то записываем новую лучшую длину
 path9 :-
-    findall(Res, path(a, l, [], Res), List), path9Iterate(List, [], 9999, Best, _), write(Best), nl.
+    findall(Res, path(a, l, [], Res), List),
+    path9Iterate(List, [], 9999, Best, _),
+    write(Best), nl.
 
 path9Iterate([], Res, Len, Res, Len).
 path9Iterate([H|Tail], BestRes, BestLen, Res, Len) :-
@@ -256,6 +274,12 @@ path9Iterate([H|Tail], BestRes, BestLen, Res, Len) :-
 /*5.10 #4
 Найти кратчайший путь, проходящий через все комнаты с кладом (клад в комнате обозначается знаком $)
 */
+
+% сделали 2 новых факта с нахождением сокровищ
+%
+
+
+%
 treasure(g).
 treasure(l).
 
@@ -264,7 +288,7 @@ subset(List, [H|Tail]) :-
     member(H, List),
     subset(List, Tail).
 
-pathBacktrack(Goal, Goal, Ans, Ans).  % could backtrack if needed
+pathBacktrack(Goal, Goal, Ans, Ans).  % можно вернутся если надо
 pathBacktrack(Start, Goal, List, Res) :-
     isDoor(Start, Next),
     append(List, [Next], NewList),
@@ -279,6 +303,7 @@ pathBacktrack(Start, Goal, List, Res) :-
 
 path10 :-
     findall(Treasure, treasure(Treasure), TreasureList),
+    write(TreasureList),nl,
     findall(Res, (pathBacktrack(a, _, [], Res), subset(Res, TreasureList)), List),
     path9Iterate(List, [], 9999, Best, _),
     write(Best), nl.
